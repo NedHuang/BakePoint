@@ -106,19 +106,21 @@
             2. ssthresh = cwnd /2
             3. cwnd 重置为 1
         - 核心：乘法减小（Multiplicative Decrease）和加法增大（Additive Increase）
-        <img src="./images/network/yongsekongzhi.jpg" width="100%">
+
+        <img src="./images/network/yongsekongzhi.jpg" width="75%">
     - 快重传算法
 
         接收方收到收到一个失序的报文段后就立即发出重复确认。 收到三个duplicate AKG后就重传，不用等到RTO超时。
         1. ssthresh = cwnd /2
         2. 进入快速恢复算法.
-        <img src="./images/network/kuaichongchuan.jpg" width="100%">
+
+        <img src="./images/network/kuaichongchuan.jpg" width="75%">
     
     - 快速恢复算法(至少收到三个duplicate AKGS,网络不是那么糟糕)
         
         当发送方连续收到三个重复确认时，就执行“乘法减小”算法，把ssthresh门限减半（为了预防网络发生拥塞）。但是接下去并不执行慢开始算法。考虑到如果网络出现拥塞的话就不会收到好几个重复的确认，所以发送方现在认为网络可能没有出现拥塞。所以此时不执行慢开始算法，而是将cwnd设置为ssthresh减半后的值，然后执行拥塞避免算法，使cwnd缓慢增大。如
 
-        <img src="./images/network/kuaisuhuifu.jpg" width="100%">
+        <img src="./images/network/kuaisuhuifu.jpg" width="75%">
 
     - TCP如何保证安全
         -  停止等待协议
@@ -191,7 +193,8 @@
     2. 页面劫持：隐私泄露的风险比较隐蔽，用户基本感知不到。但另外一类劫持的影响就非常明显非常直接了——页面劫持，也就是直接篡改用户的浏览页面。
 - HTTP劫持分类
     - 根据劫持路径分类：DNS 劫持、客户端劫持、链路劫持。
-    <img src="./images/network/http_hijack.jpg" width="100%">
+
+    <img src="./images/network/http_hijack.jpg" width="75%">
 
 
 - HTTPS与Web服务器通信时的几个步骤
@@ -207,7 +210,7 @@
 5. Web服务器利用自己的私钥解密出会话密钥。
 
 6. Web服务器利用会话密钥加密与客户端之间的通信。
-    <img src="./images/network/http_webserver_communication.jpg" width="100%">
+    <img src="./images/network/http_webserver_communication.jpg" width="75%">
 
 - HTTPS的优点
 
@@ -215,7 +218,8 @@
 2. 内容加密——防窃听：HTTPS协议是由SSL+HTTP协议构建的可进行加密传输、身份认证的网络协议，要比http协议安全，可防止数据在传输过程中不被窃取。
 3. 一致性校验——防篡改：通过对数据和共享密钥的 MAC 码来防止中间者篡改消息内容，确保数据的一致性。
 4. HTTPS网络传输安全系数相对较高，可以大幅增加中间人攻击的成本。
-<img src="./images/network/https_advantage.jpg" width="100%">
+
+<img align="center" src="./images/network/https_advantage.jpg" width="75%">
 
 ## HTTPS的缺点
 
