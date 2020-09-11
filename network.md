@@ -264,14 +264,18 @@
     - 优点：安全性更高，公钥是公开的，密钥是自己保存的，不需要将私钥给别人。
     - 缺点：加密和解密花费时间长、速度慢，只适合对少量数据进行加密。
 
-例子：
-1. Alice需要在银行的网站做一笔交易，她的浏览器首先生成了一个随机数作为对称密钥。
-2. Alice的浏览器向银行的网站请求公钥。
-3. 银行将公钥发送给Alice。
-4. Alice的浏览器使用银行的公钥将自己的对称密钥加密。
-5. Alice的浏览器将加密后的对称密钥发送给银行。
-6. 银行使用私钥解密得到Alice浏览器的对称密钥。
-7. Alice与银行可以使用对称密钥来对沟通的内容进行加密与解密了。
+- SSL 协议 (HTTP+SSL=HTTPS)
+    - 通信双方通过对称加密来加密密文，然后使用非对称加密的方式来传递对称加密所使用的密钥。这样效率和安全就都能保证了。
+    - SSL协议的握手过程
+        1. Alice需要在银行的网站做一笔交易，她的浏览器首先生成了一个随机数作为对称密钥。
+        2. Alice的浏览器向银行的网站请求公钥。
+        3. 银行将公钥发送给Alice。
+        4. Alice的浏览器使用银行的公钥将自己的对称密钥加密。
+        5. Alice的浏览器将加密后的对称密钥发送给银行。
+        6. 银行使用私钥解密得到Alice浏览器的对称密钥。
+        7. Alice与银行可以使用对称密钥来对沟通的内容进行加密与解密了。
+
+
 
 
 ## DNS
@@ -404,4 +408,93 @@ DDos
 可见性|数据在 URL 中对所有人都是可见的。|数据不会显示在 URL 中。
 
 - **如果必须做从客户端到服务器的端端加密。业界的通行做法就是https**
-- **具体看RESTFUL框架**对于GET、POST、PUT、DELETE等的描述
+- **具体看RESTFUL框架**对于GET、POST、PUT、DELETE等的描述。
+
+
+# Session, Cookie, and Token
+## 需要cookie和session的原因
+- http协议无状态的协议，每次请求都需要新的请求 无法维持一个用户 的状态。
+- cookie是来自浏览器，保存在浏览器的键值对，主要应用于用户登陆。
+- session服务端端每一个session维护一份会话信息数据，客户端和服务端依靠一个全局唯一标识sesssion_id来访问会话信息数据。用户访问web应用时，服务端程序决定何时创建session。
+
+
+## Cookie
+- 作用： 
+    1. 识别用户身份。比如当A访问服务器时候，会被返回一段数据[id=1], 当再次访问的时候带上[id=1]。B访问服务器，则会被安排新的id
+    2. 记录历史。例如在购物车加入商品时，JS可以修改cookie字段 [cart = itemA,itemB]。这样以后访问，购物车里面的物品不会被删除。
+
+- cookie属性：
+    - secure: Cookie通信只限于加密传输，指示浏览器仅仅在通过安全/加密连接才能使用该Cookie
+    - httponly: 指示浏览器不要在除HTTP（和 HTTPS)请求之外暴露Cookie。不可以用document.cookie来获取cookie
+
+
+- 添加 cookie:
+    - Django
+```
+# django httpResponse有 set_cookie()方法
+HttpResponse.set_cookie(
+    key, value='', max_age=None, expires=None, path='/', 
+    domain=None, secure=None, httponly=False, samesite=None
+) :
+
+# django request object 有 cookies 属性,该属性是一个字典
+request.COOKIES[‘cookie_name’]
+
+# 例子 first visit: set cookie [team] = barcelona, next visit, will send the cookie to server.
+# cookie will be deleted when brower is closed if max_age is not set
+def test_cookie(request):   
+    if not request.COOKIES.get('team'):
+        response = HttpResponse("Visiting for the first time.")
+        response.set_cookie('team', 'barcelona')
+        return response
+    else:
+        return HttpResponse("Your favorite team is {}".format(request.COOKIES['team']))
+# so if the cookie's team attribute is set to Barcelona, it will return Your favorite team is Barcelona
+
+# delete cookie:
+    response.delete_cookie('cookie_name')
+# update cookie:
+    There is no cookie update method in HttpResponse, 
+    use set_cookie() to update the cookie value or expiry time.
+
+Never ever use cookies to store sensitive data like passwords. Cookies store data in plain text, as a result, anybody can read/modify them.
+
+```
+```
+// Get Cookies:
+@GetMapping("/")
+public String readCookie(@CookieValue(value = "username", defaultValue = "Atta") String username) {
+    return "Hey! My username is " + username;
+}
+
+// Add cookie
+@GetMapping("/login")
+@ResponseBody
+public ResponseEntity<?> login(@RequestBody String credentials, HttpServletResponse response) {
+
+    // create a cookie
+    Cookie cookie = new Cookie("platform","mobile");
+
+    // expires in 7 days
+    cookie.setMaxAge(7 * 24 * 60 * 60);
+
+    // optional properties
+    cookie.setSecure(true);
+    cookie.setHttpOnly(true);  
+    cookie.setPath("/");
+
+    // add cookie to response
+    response.addCookie(cookie);
+}
+
+// Delete Cookie:
+
+1. 将Cookie的值设置为null
+Cookie cookie = new Cookie("username", null);
+2. 将`Max-Age`设置为0
+cookie.setMaxAge(0);
+response.addCookie(cookie);
+
+```
+
+## Session
