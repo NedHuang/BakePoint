@@ -48,3 +48,38 @@
 
 
 ## 线程间通信
+
+- 锁机制：包括互斥锁（mutex)、条件变量、读写锁
+
+    - 互斥锁提供了以排他方式防止数据结构被并发修改的方法。
+    - 读写锁允许多个线程同时读共享数据，而对写操作是互斥的。
+    - 条件变量可以以原子的方式阻塞进程，直到某个特定条件为真为止。对条件的测试是在互斥锁的保护下进行的。条件变量始终与互斥锁一起使用。
+- 信号量机制(Semaphore)：包括无名线程信号量和命名线程信号量
+
+- 信号机制(Signal)：类似进程间的信号处理。
+
+## 锁
+- 概念 lock A lock is an abstraction that allows at most one thread to own it at a time. Holding a lock is how one thread tells other threads: “I’m changing this thing, don’t touch it right now.”
+- 操作：
+
+- **Acquire/获取** allows a thread to take ownership of a lock. If a thread tries to acquire a lock currently owned by another thread, it blocks until the other thread releases the lock. At that point, it will contend with any other threads that are trying to acquire the lock. At most one thread can own the lock at a time.
+
+- **Release/释放** relinquishes ownership of the lock, allowing another thread to take ownership of it.
+
+- 自旋锁: 只要没有锁上，就不断重试.浪费CPU资源。
+```
+while (抢锁(lock) == 没抢到) {
+}
+```
+抢锁失败后只要锁的持有状态一直没有改变，那就让出 CPU 给别的线程先执行。
+
+- 互斥锁： 
+    -  Mutex is a mutual exclusion object that synchronizes access to a resource。
+    多线程共享一个互斥量，然后线程之间去竞争。得到锁的线程可以进入临界区执行代码。
+```
+while (抢锁(lock) == 没抢到) {
+    本线程先去睡了请在这把锁的状态发生改变时再唤醒
+}
+```
+- 死锁 DeadLock
+    - Deadlock occurs when concurrent modules are stuck waiting for each other to do something. the signal feature of deadlock is a **cycle of dependencies**.
