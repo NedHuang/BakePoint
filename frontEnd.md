@@ -93,6 +93,6 @@ function foo(){
     return bar;
 }
 var baz = foo();
-baz(); //这就是闭包
+baz(); //这就是闭包, 输出 2
 
 ```
