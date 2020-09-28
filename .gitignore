@@ -1,13 +1,2 @@
 Slides.rar
-Slides/Slides/01-introduction.pdf
-Slides/Slides/02-unix-basics.pdf
-Slides/Slides/03-making-processes.pdf
-Slides/Slides/04-process-environment.pdf
-Slides/Slides/05-io-files-pipes.pdf
-Slides/Slides/06-files-dirs.pdf
-Slides/Slides/07-virtual-memory.pdf
-Slides/Slides/08-signals.pdf
-Slides/Slides/09-pipes-fifos.pdf
-Slides/Slides/11-ipc.pdf
-Slides/Slides/13-threads.pdf
-Slides/Slides/14-sockets.pdf
+Slides/*
