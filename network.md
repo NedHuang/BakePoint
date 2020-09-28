@@ -127,7 +127,7 @@
 
         拥塞避免算法让拥塞窗口缓慢增长，即每经过一个往返时间RTT(Round-Trip Time) 就把发送方的拥塞窗口cwnd加1，而不是加倍。这样拥塞窗口按线性规律缓慢增长。 
         - 每当收到一个ACK， cwnd = cwnd + 1/cwnd
-        - 每当过了一个RTT, cwnd = cwdn +1
+        - 每当过了一个RTT, cwnd = cwdn +1， RTT: Round-trip delay (来回通信延迟)
         - 拥塞发生，当发生丢包进行数据包重传的时候，表示网络已经拥塞。
             1. 超时重传时间是以 RTO （Retransmission Timeout 超时重传时间）表示。
             2. ssthresh = cwnd /2
@@ -153,10 +153,10 @@
         -  停止等待协议
             1. 每发送完一个分组，就停止发送，等待对方确认，收到确认后再发送下一个分组。
             2. 每发送一个分组就设置一个超时计时器，超时之后就重传。
-            3. 确认丢失：
-            确认丢失A要重传，B要再次确认
+            3. 确认丢失：确认丢失A要重传，B要再次确认
             4. 确认迟到：
                 对于确认迟到，A要重传分组，对收到的迟到确认丢弃。B要再次确认分组，对收到的重复分组丢弃。
+        
         - 连续 ARQ协议 -重传请求（Automatic Repeat-reQuest）
             - 利用滑动窗口，位于滑动窗口内的所有分组都能发出去。不需要逐个等待和确认。
                 1. 策略A：每收到一个确认，酒吧发送窗口向前滑动一个分组的位置
@@ -228,25 +228,24 @@
 
 1. 客户使用https的URL访问Web服务器，要求与Web服务器建立SSL连接。
 
-2. Web服务器收到客户端请求后，会将网站的证书信息（证书中包含公钥）传送一份给客户端。
+    2. Web服务器收到客户端请求后，会将网站的证书信息（证书中包含公钥）传送一份给客户端。
 
-3. 客户端的浏览器与Web服务器开始协商SSL连接的安全等级，也就是信息加密的等级。
+    3. 客户端的浏览器与Web服务器开始协商SSL连接的安全等级，也就是信息加密的等级。
 
-4. 客户端的浏览器根据双方同意的安全等级，建立会话密钥，然后利用网站的公钥将会话密钥加密，并传送给网站。
+    4. 客户端的浏览器根据双方同意的安全等级，建立会话密钥，然后利用网站的公钥将会话密钥加密，并传送给网站。
 
-5. Web服务器利用自己的私钥解密出会话密钥。
+    5. Web服务器利用自己的私钥解密出会话密钥。
 
-6. Web服务器利用会话密钥加密与客户端之间的通信。
-    <img src="./images/network/http_webserver_communication.jpg" width="75%">
+    6. Web服务器利用会话密钥加密与客户端之间的通信。
+        <img src="./images/network/http_webserver_communication.jpg" width="50%">
 
 - HTTPS的优点
 
-1. 身份认证：使用HTTPS协议可认证用户和服务器，确保数据发送到正确的客户机和服务器。
-2. 内容加密——防窃听：HTTPS协议是由SSL+HTTP协议构建的可进行加密传输、身份认证的网络协议，要比http协议安全，可防止数据在传输过程中不被窃取。
-3. 一致性校验——防篡改：通过对数据和共享密钥的 MAC 码来防止中间者篡改消息内容，确保数据的一致性。
-4. HTTPS网络传输安全系数相对较高，可以大幅增加中间人攻击的成本。
-
-<img align="center" src="./images/network/https_advantage.jpg" width="75%">
+    1. 身份认证：使用HTTPS协议可认证用户和服务器，确保数据发送到正确的客户机和服务器。
+    2. 内容加密——防窃听：HTTPS协议是由SSL+HTTP协议构建的可进行加密传输、身份认证的网络协议，要比http协议安全，可防止数据在传输过程中不被窃取。
+    3. 一致性校验——防篡改：通过对数据和共享密钥的 MAC 码来防止中间者篡改消息内容，确保数据的一致性。
+    4. HTTPS网络传输安全系数相对较高，可以大幅增加中间人攻击的成本。
+        <img src="./images/network/https_advantage.jpg" width="50%">
 
 ## HTTPS的缺点
 
@@ -309,6 +308,64 @@
     将主机域名转换为ip地址，属于应用层协议，使用UDP传输。
 
 # 计算机网络 - session, cookie, 请求等。
+### 为什么要有cookie/session
+- Http是一个无状态协议，为了使某个域名下的所有网页能够共享某些数据。
+- 流程如下： 
+    - 首先，客户端会发送一个http请求到服务器端。
+    - 服务器端接受客户端请求后，建立一个session，并发送一个http响应到客户端，这个响应头，其中就包含Set-Cookie头部。该头部包含了sessionId。Set-Cookie格式如下。
+        ```
+        Set-Cookie: value[; expires=date][; domain=domain][; path=path][; secure]
+        ```
+    - 在客户端发起的第二次请求，假如服务器给了set-Cookie，浏览器会自动在请求头中添加cookie
+    - 服务器接收请求，分解cookie，验证信息，核对成功后返回response给客户端.
+        <img src="./images/network/set_session.jpg" width="50%">
+## Session
+    -  session是另一种记录客户状态的机制。不同的是cookie保存在客户端浏览器中，而session保存在服务器上。
+    -  当浏览器 第一次发送请求时，服务器自动生成了一个HashTable和一个Session ID用来唯一标识这个HashTable，并将其通过响应发送到浏览器。
+    - 当浏览器第二次发送请求，会将前一次服务器响应中的Session ID放在请求中一并发送到服务器上，
+    - 服务器从请求中提取出Session ID，并和保存的所有Session ID进行对比，找到这个用户对应的HashTable。
+## Cookie
+    - cookie是一小段的文本信息。客户端请求服务器，如果服务器需要记录该用户的状态，就使用response向客户端浏览器颁发一个cookie。
+    - 客户端浏览器会把cookie保存起来。当浏览器再次请求该网站时，浏览器就会把请求地址和cookie一同给服务器。
+    - 服务器检查该cookie，从而判断用户的状态。服务器还可以根据需要修改cookie的内容.
+
+## Token
+- token 也称作令牌，由uid+time+sign[+固定参数].
+- token 是一种 临时的证书签名。 是一种服务端无状态的认证方式（服务端不保存身份认证相关数据。
+- 组成：
+    - uid: 用户唯一身份标识
+    - time: 当前时间的时间戳
+    - sign: 签名, 使用 hash/encrypt 压缩成定长的十六进制字符串，以防止第三方恶意拼接
+    - 固定参数(可选): 将一些常用的固定参数加入到 token 中是为了避免重复查库
+- 存放:
+    - token在客户端一般存放于localStorage，cookie，或sessionStorage中。在服务器一般存于数据库中
+- token认证流程
+    - 用户登录，成功后服务器返回Token给客户端。
+    - 客户端收到数据后保存在客户端
+    - 客户端再次访问服务器，将token放入headers中
+    - 服务器端采用filter过滤器校验。校验成功则返回请求数据，校验失败则返回错误码
+- token可以抵抗 csrf
+    - CSRF: 攻击者无法直接窃取到用户的信息（Cookie，Header，网站内容等），仅仅是冒用Cookie中的信息. 使用token
+        1. 生成token，存放在session中
+        2. 页面的请求中添加这个token
+            - JS 遍历 DOM树， 在所有的form最后加上 toekn。或者手动添加到返回给客户端的页面中
+            - 对于GET请求，Token将附在请求地址之后，这样URL 变成  xxx/?token=tokenvalue
+        3. 服务器收到请求时解析token
+
+- JWT token (JSON Web Token)
+    - 格式： header.payload.signature
+
+        <img src="./images/network/jwt_token.jpg" width="50%">
+    - 创建："typ"键的值指定对象是JWT，“alg”键的值指定用于创建 JWT 签名的算法
+        1. header
+            ```
+            {
+                "typ": "JWT",
+                "alg": "HS256"
+            }
+            ```
+        2.
+
 
 # 计算机网络 - Security。
 
@@ -409,7 +466,9 @@ select * from user where name = 'AAA' and password = '' or '1'='1'
     5. 单独设置文件服务器的域名。
 
 ## DDos (Distributed Denial of Service): 分布式拒绝服务
-- 定义：攻击者利用利用网络节点资源如：IDC服务器、个人PC、手机、智能设备、打印机、摄像头等对目标发起大量攻击请求，大规模消耗目标网站的主机资源，让它无法正常服务。
+- 定义：
+    - 攻击者利用利用网络节点资源如：IDC服务器、个人PC、手机、智能设备、打印机、摄像头等对目标发起大量攻击请求
+    - 大规模消耗目标网站的主机资源，让它无法正常服务。
 DDos 
 - 分类：
     - 资源消耗类攻击：通过大量请求消耗正常的带宽和协议栈处理资源的能力。Syn Flood、Ack Flood、UDP Flood。
@@ -481,11 +540,16 @@ def test_cookie(request):
     response.delete_cookie('cookie_name')
 # update cookie:
     There is no cookie update method in HttpResponse, 
-    use set_cookie() to update the cookie value or expiry time.
+    use set_cookie() to update the cookie value or expiry time. 重新设置
 
 Never ever use cookies to store sensitive data like passwords. Cookies store data in plain text, as a result, anybody can read/modify them.
 
+
+获取 请求的cookie: 
+request.COOKIES.get('team')
 ```
+
+- Spring
 ```
 // Get Cookies:
 @GetMapping("/")

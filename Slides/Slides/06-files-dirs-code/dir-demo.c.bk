@@ -1,0 +1,46 @@
+#include <dirent.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+
+#define SIZE 2048
+
+int main(int argc, char *argv[]){
+  int ret;
+  char buf[SIZE];
+  mode_t perms = S_IRUSR | S_IWUSR | S_IXUSR;
+
+  // Get working directory
+  if( getcwd(buf,SIZE) == NULL ){
+    perror("Can't get working directory");
+    exit(1);
+  }
+  printf("Working directory: %s\n",buf);
+
+  // Create a directory
+  if( mkdir("tmpdir",perms) == -1 ){
+    perror("Couldn't create directory");
+    exit(1);
+  }
+  printf("Made tmpdir\n");
+
+  // Change to new directory
+  if( chdir("tmpdir") == -1 ){
+    perror("Couldn't change directory");
+    exit(1);
+  }
+  if( getcwd(buf,SIZE) == NULL ){
+    perror("Can't get working directory");
+    exit(1);
+  }
+  printf("Working directory: %s\n",buf);
+
+  // Change back
+  if( chdir("..") == -1 ){
+    perror("Couldn't change back");
+    exit(1);
+  }
+
+  return 0;
+}

@@ -1,0 +1,25 @@
+#include <dirent.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+
+int main(int argc, char *argv[]){
+  if(argc < 2){
+    printf("usage: %s <filename>\n",argv[0]);
+    exit(1);
+  }
+
+  char *filename = argv[1];
+  struct stat statbuf = {};
+  int ret = stat(filename, &statbuf);
+  if(ret == -1){
+    perror("Could not stat file");
+    exit(1);
+  }
+
+  printf("Stats for file %s\n",filename);
+  printf("Perms: %o\n",statbuf.st_mode & 0777);
+
+  exit(1);
+}

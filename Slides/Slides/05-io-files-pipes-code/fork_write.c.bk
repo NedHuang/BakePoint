@@ -1,0 +1,27 @@
+// write_read_ints.c: Demonstration of writing binary integer data to
+// a file the reading it back.
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+#define COUNT 16
+
+int main(int argc, char *argv[]){
+  char *outfile = "shared.txt";                       // make sure this file exists
+  int perms = S_IRUSR | S_IWUSR;
+  int fd = open(outfile,O_WRONLY|O_CREAT,perms);
+
+  int child = fork();
+
+  char buf[512];
+  snprintf(buf,512,"I'm process %d\n",getpid());
+  int nbytes = strlen(buf);
+  write(fd, buf, nbytes);
+
+  close(fd);
+  return 0;
+}

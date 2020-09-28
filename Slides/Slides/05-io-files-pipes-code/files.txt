@@ -1,0 +1,17 @@
+total 132K
+-rwxrwx--- 1 kauffman kauffman  13K Sep 28 13:46 a.out
+-rw-rw---- 1 kauffman kauffman  856 Sep 26 09:17 capture_stdout.c
+-rw-rw---- 1 kauffman kauffman  680 Sep 26 14:04 #cfuncs.c#
+-rw-rw---- 1 kauffman kauffman   26 Sep 28 13:46 existing.txt
+-rw-rw---- 1 kauffman kauffman  128 Sep 28 13:46 existing.txt~
+-rw-rw---- 1 kauffman kauffman    0 Sep 28 13:52 files.txt
+-rw-rw---- 1 kauffman kauffman 1.5K Sep 26 10:58 gettysburg.txt
+-rw-rw---- 1 kauffman kauffman   64 Sep 26 12:01 integers.dat
+-rw-rw---- 1 kauffman kauffman 1.1K Sep 26 12:30 low_level_interactions.c
+-rw-rw---- 1 kauffman kauffman  125 Sep 26 10:57 quote.txt
+-rw-rw---- 1 kauffman kauffman 1.6K Sep 26 11:04 read_some.c
+-rw-rw---- 1 kauffman kauffman 1.2K Sep 26 12:21 write_readable.c
+-rw-rw---- 1 kauffman kauffman 2.1K Sep 26 12:21 write_read_ints.c
+-rw-rw---- 1 kauffman kauffman 2.2K Sep 28 13:46 write_then_read.c
+-rw-rw---- 1 kauffman kauffman 2.1K Sep 26 12:21 write_then_read.c~
+-rw-rw---- 1 kauffman kauffman 1.2K Sep 26 12:21 write_unreadable.c

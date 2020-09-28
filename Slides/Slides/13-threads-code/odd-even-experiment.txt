@@ -1,0 +1,52 @@
+Programs run were
+- busy: always lock, then check
+- nested_if: check, the lock, then check again
+- triple_if: check, check again, then lock, then check
+- condvar: check then sleep on a single condvar, broadcast to sleepers
+- two_condvars: check odd_cv or even_cv, sleep, signal opposite CV
+
+Run on laptop with 4 cores (phaedrus)
+
+5000 increments, output only when updating
+
+Simulate work in critical region with usleep(1): 1 microsecond sleep
+
+time busy:
+real	0m2.113s
+user	0m1.032s
+sys	0m0.596s
+-----
+
+time nested_if:
+real	0m2.982s
+user	0m3.239s
+sys	0m0.330s
+
+-----
+time triple_if:
+real	0m2.514s
+user	0m2.494s
+sys	0m0.378s
+
+-----
+time condvar:
+real	0m1.635s
+user	0m0.261s
+sys	0m0.820s
+
+-----
+time two_condvars:
+real	0m1.581s
+user	0m0.126s
+sys	0m0.405s
+
+The condition variable(s) leads to much more efficient system CPU
+utilization as evidenced by the smaller user times. Using two
+condition variables means only waking up a single sleeper that should
+wake up.
+
+Between the busy, nested_if, and triple_if, more checks of the
+variable happen with the nested_if/triple_if leading to higher CPU
+utilization for checks which is not useful work. The busy variant
+causes threads to sleep more often lowering user time.
+
