@@ -364,8 +364,18 @@
                 "alg": "HS256"
             }
             ```
-        2.
-
+        2. payload
+            - iss (issuer)：签发人
+            - exp (expiration time)：过期时间
+            - sub (subject)：主题
+            - aud (audience)：受众
+            - nbf (Not Before)：生效时间
+            - iat (Issued At)：签发时间
+            - jti (JWT ID)：编号
+        3. SIGNATURE
+            - 该算法所做的是 base64url 对在步骤1和2中创建的header和payload进行编码。以'.' 连接
+            - 然后 hash
+            - 然后继续base64url
 
 # 计算机网络 - Security。
 
@@ -433,7 +443,8 @@ select * from user where name = 'AAA' and password = '' or '1'='1'
     - 登录受信任的网站A，并在本地生成Cookie。
     - 在不登出A的情况下，访问危险网站B。
 - CSRF防御原理
-    - 对用户凭证"进行校验处理"。 
+    - 对用户凭证"进行校验处理"。 CSRF 攻击者不能获取到 Cookie 等信息，只是使用。
+    - 因为cookie采取同源策略，只有相同域名的网页才能获取域名对应的cookie，
     1. 签名校验，并对数据进行生命周期时间管理，就是数据过期管理。创建Token处理机制，Token数据结构与时间、加密签名直接相关
         - Token构成：
             - 消息(msg)：而msg本身也有两部分组成：一部分：随机字符串，过期时间戳。
@@ -549,7 +560,7 @@ Never ever use cookies to store sensitive data like passwords. Cookies store dat
 request.COOKIES.get('team')
 ```
 
-- Spring
+<!-- - Spring
 ```
 // Get Cookies:
 @GetMapping("/")
@@ -585,6 +596,105 @@ Cookie cookie = new Cookie("username", null);
 cookie.setMaxAge(0);
 response.addCookie(cookie);
 
-```
+``` -->
 
 ## Session
+```
+# set session data
+request.session[‘user_id’] = ‘20’
+request.session[‘team’] = ‘Barcelona’
+
+# read session data
+request.session.get(‘user_id’) # returns ‘20’
+request.session.get(‘team’) # returns ‘Barcelona’
+
+## delete session data
+del request.session[‘user_id’]
+del request.session[‘user_id’]
+```
+
+## Session Middleware
+- django.contrib.sessions.middleware.SessionMiddleware
+- Middlewares are called before and after the view is called. 
+    - process_request(self, request) is consumed before, and 
+    - process_response(self, request, response) is consumed after the view is called.
+    - process_request: 查找有没有cookie的name是 session_id，有的话去sessin数据库中找到session_key对应的记录
+    - process_request: 检查 session是不是被修改/创建。如果是，在session数据库中更新，并且加到cookiez中。
+
+```
+import time
+from importlib import import_module
+
+from django.conf import settings
+from django.contrib.sessions.backends.base import UpdateError
+from django.core.exceptions import SuspiciousOperation
+from django.utils.cache import patch_vary_headers
+from django.utils.deprecation import MiddlewareMixin
+from django.utils.http import http_date
+
+
+class SessionMiddleware(MiddlewareMixin):
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+        engine = import_module(settings.SESSION_ENGINE)
+        self.SessionStore = engine.SessionStore
+
+    def process_request(self, request):
+        session_key = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
+        request.session = self.SessionStore(session_key)
+
+    def process_response(self, request, response):
+        """
+        If request.session was modified, or if the configuration is to save the
+        session every time, save the changes and set a session cookie or delete
+        the session cookie if the session has been emptied.
+        """
+        try:
+            accessed = request.session.accessed
+            modified = request.session.modified
+            empty = request.session.is_empty()
+        except AttributeError:
+            pass
+        else:
+            # First check if we need to delete this cookie.
+            # The session should be deleted only if the session is entirely empty
+            if settings.SESSION_COOKIE_NAME in request.COOKIES and empty:
+                response.delete_cookie(
+                    settings.SESSION_COOKIE_NAME,
+                    path=settings.SESSION_COOKIE_PATH,
+                    domain=settings.SESSION_COOKIE_DOMAIN,
+                )
+                patch_vary_headers(response, ('Cookie',))
+            else:
+                if accessed:
+                    patch_vary_headers(response, ('Cookie',))
+                if (modified or settings.SESSION_SAVE_EVERY_REQUEST) and not empty:
+                    if request.session.get_expire_at_browser_close():
+                        max_age = None
+                        expires = None
+                    else:
+                        max_age = request.session.get_expiry_age()
+                        expires_time = time.time() + max_age
+                        expires = http_date(expires_time)
+                    # Save the session data and refresh the client cookie.
+                    # Skip session save for 500 responses, refs #3881.
+                    if response.status_code != 500:
+                        try:
+                            request.session.save()
+                        except UpdateError:
+                            raise SuspiciousOperation(
+                                "The request's session was deleted before the "
+                                "request completed. The user may have logged "
+                                "out in a concurrent request, for example."
+                            )
+                        response.set_cookie(
+                            settings.SESSION_COOKIE_NAME,
+                            request.session.session_key, max_age=max_age,
+                            expires=expires, domain=settings.SESSION_COOKIE_DOMAIN,
+                            path=settings.SESSION_COOKIE_PATH,
+                            secure=settings.SESSION_COOKIE_SECURE or None,
+                            httponly=settings.SESSION_COOKIE_HTTPONLY or None,
+                            samesite=settings.SESSION_COOKIE_SAMESITE,
+                        )
+        return response
+```
