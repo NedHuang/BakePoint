@@ -120,6 +120,10 @@
     - TCP 的数据大小如果大于 MSS(maximum segment size) 大小，则会在传输层进行分片，目标主机收到后，也同样在传输层组装 TCP 数据包，如果中途丢失了一个分片，只需要传输丢失的这个分片。
     - UDP 的数据大小如果大于 MTU(Maximum transmission unit) 大小，则会在 IP 层进行分片，目标主机收到后，在 IP 层组装完数据，接着再传给传输层，但是如果中途丢了一个分片，则就需要重传所有的数据包，这样传输效率非常差，所以通常 UDP 的报文应该小于 MTU。
 
+<p align="center">
+    <img src="./images/network/MTU_MSS.jpeg" width="75%" >
+<p>
+
 - TCP 和 UDP 应用场景：
     - TCP: 面向连接，能保证数据的可靠性交付
         - FTP 文件传输
@@ -178,6 +182,21 @@
     - 当客户端的 SYN 请求连接在网络中阻塞，客户端没有接收到 ACK 报文，就会重新发送 SYN
     - 由于没有第三次握手，服务器不清楚客户端是否收到了自己发送的建立连接的 ACK 确认信号， 所以`每收到一个 SYN 就只能先主动建立一个连接`
     - 如果客户端的 SYN 阻塞了，重复发送多次 SYN 报文，那么服务器在收到请求后就会`建立多个冗余的无效链接`，造成不必要的资源浪费。
+<p align="center">
+    <img src="./images/network/2_way_handshake.jpeg" width="75%" >
+<p>
+
+- 为什么客户端和服务端的初始序列号 ISN 是不相同的
+    - 如果一个已经失效的连接被重用了，一样的ISN会产生数据错乱
+    - 安全性，防止伪造的相同序列号的 TCP 报文被对方接收。
+
+- TCP负责IP之上的重传。
+    - 当 IP 层有一个超过 MTU 大小的数据（TCP 头部 + TCP 数据）要发送，那么 IP 层就要进行分片。由目标主机的 IP 层来进行重新组装后，再交给上一层 TCP 传输层。`那么当如果一个 IP 分片丢失，整个 IP 报文的所有分片都得重传`.
+    - IP 层本身`没有`超时重传机制，它由传输层的 TCP 来负责超时和重传。
+    - 为了达到最佳效率 TCP 协议在建立连接的时候要协商双方的 `MSS` 值。当 TCP 层发现数据超过 MSS 时, 会先进行分片。
+
+
+
 ## 四次挥手
 - TCP 的连接的拆除需要发送四个包，因此称为四次挥手(Four-way handshake)。客户端或服务器均可主动发起挥手动作，在 socket 编程中，任何一方执行 close() 操作即可产生挥手操作。
 
@@ -206,7 +225,51 @@
 
 ### 为什么不能两次握手：
  - 为了实现可靠传输，发送方和接收方始终需要同步( SYNchronize )序号。 需要注意的是， 序号并不是从 0 开始的， 而是由发送方随机选择的初始序列号 ( Initial Sequence Number, ISN )开始 。 由于 TCP 是一个双向通信协议， 通信双方都有能力发送信息， 并接收响应。 因此， 通信双方都需要随机产生一个初始的序列号， 并且把这个起始值告诉对方。
- <img src="./images/network/TCP3.jpg" width="75%">
+ <p align="center">
+    <img src="./images/network/TCP3.jpg" width="75%">
+ </p>
+
+## 什么是 SYN 攻击？
+- TCP 连接建立是需要三次握手，假设攻击者短时间伪造不同 IP 地址的 SYN 报文，服务端每接收到一个 SYN 报文，就进入SYN_RCVD 状态，但服务端发送出去的 ACK + SYN 报文，
+- 无法得到未知 IP 主机的 ACK 应答，久而久之就会占满服务端的 SYN 接收队列（未连接队列），使得服务器不能为正常用户服务。（两次握手后中断）
+## 如何避免 SYN 攻击 
+- 接受数据包速率大于内核处理速率时候，网卡讲数据包加入队列
+    - 修改控制这个队列的最大值 
+    ```bash
+        net.core.netdev_max_backlog
+    ```
+    - SYN_RCVD 状态连接的最大个数
+    ```bash
+        net.ipv4.tcp_max_syn_backlog
+    ```
+    超出处理能时，对新的 SYN 直接回报 RST，丢弃连接：
+    ```bash
+        net.ipv4.tcp_abort_on_overflow
+    ```
+- tcp_syncookies 应对 SYN 攻击
+    - 正常处理流程：
+        1. 当服务端接收到客户端的 SYN 报文时，会将其加入到内核的「 SYN 队列」；
+        2. 接着发送 SYN + ACK 给客户端，等待客户端回应 ACK 报文；
+        3. 服务端接收到 ACK 报文后，从「 SYN 队列」移除放入到「 Accept 队列」；
+        4. 应用通过调用 accpet() socket 接口，从「 Accept 队列」取出连接。
+
+    <p align="center" float="left">
+        <img src="./images/network/SYN_attack_1.jpeg" width="40%" />
+        <img src="./images/network/SYN_attack_2.jpeg" width="40%"/>
+    </p>
+
+    - 如果不断受到 SYN 攻击，就会导致「 SYN 队列」被占满。 启用cookie。
+    ```bash
+        net.ipv4.tcp_syncookies = 1
+    ```
+    <p align="center" float="left">
+        <img src="./images/network/SYN_attack_3.jpeg" width="40%" />
+    </p>
+        1. 当 「 SYN 队列」满之后，后续服务器收到 SYN 包，不进入「 SYN 队列」；
+        2. 计算出一个 cookie 值，再以 SYN + ACK 中的「序列号」返回客户端，
+        3. 服务端接收到客户端的应答报文时，服务器会检查这个 ACK 包的合法性。如果合法，直接放入到「 Accept 队列」。
+        4. 最后应用通过调用 accpet() socket 接口，从「 Accept 队列」取出的连接。
+
 
 ### TCP 流量控制与拥塞机制
 - 流量控制
