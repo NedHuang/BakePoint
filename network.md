@@ -482,7 +482,67 @@
         6. 银行使用私钥解密得到Alice浏览器的对称密钥。
         7. Alice与银行可以使用对称密钥来对沟通的内容进行加密与解密了。
 
+## HTTP 断点续传
+- 将任务（一个文件或压缩包）人为的划分为几个部分，每一个部分采用一个线程进行上传/下载，如果碰到网络故障，可以从已经上传/下载的部分开始继续上传/下载未完成的部分，而没有必要从头开始上传/下载。
+## 实现方法： http 1.1 
+- http头部的 Range & Content-Range字段。客户端发请求时对应的是 Range ，服务器端响应时对应的是 Content-Range。
 
+- Range:
+    - 用于请求头中，指定第一个字节的位置和最后一个字节的位置
+    - ```Range:(unit=first byte pos)-[last byte pos]```
+- Content-Range:
+    - 用于响应头中，在发出带 Range 的请求后，服务器会在 Content-Range 头部返回当前接受的范围和文件总大小。
+    - ```Content-Range: bytes (unit first byte pos) - [last byte pos]/[entity legth]```
+
+- 状态码：
+    - HTTP/1.1 200 Ok（不使用断点续传方式）
+    - HTTP/1.1 206 Partial Content（使用断点续传方式）
+- 校验： If-Modified-Since，和 Last-Modified 
+    - Last-Modified 是由服务器往客户端发送的 HTTP header 
+    - If-Modified-Since 则是由客户端往服务器发送的 http header
+    - 如果不是最新的，则返回新的内容，如果是最新的，则返回 304 告诉客户端其本地 cache 的页面是最新的，于是客户端就可以直接从本地加载页面了
+- Etag - Etag（Entity Tags) last modified 的补充
+    - 一些文件也许会周期性的更改，但是内容并不改变。
+    - 某些文件修改非常频繁，例如：在秒以下的时间内进行修改
+    - 某些服务器不能精确的得到文件的最后修改时间
+    - etag可以是一个版本标记 
+- If-Range
+    - 判断实体是否发生改变，如果实体未改变，服务器发送客户端丢失的部分，否则发送整个实体。与 range配套使用。
+    - If-Range 可以使用 Etag 或者 Last-Modified 返回的值
+    ```If-Range: Etag | HTTP-Date```
+    
+    ```
+    If-Range: “627-4d648041f6b80”
+    If-Range: Fri, 22 Feb 2013 03:45:02 GMT
+    ```
+    - 工作原理
+        - Etag 由服务器端生成，客户端通过 If-Range 条件判断请求来验证资源是否修改。请求一个文件的流程如下：
+
+        - 第一次请求：
+
+        - 客户端发起 HTTP GET 请求一个文件。
+        服务器处理请求，返回文件内容以及相应的 Header，其中包括 Etag（例如：627-4d648041f6b80）（假设服务器支持 Etag 生成并已开启了 Etag）状态码为 200。
+        第二次请求（断点续传）：
+
+        - 客户端发起 HTTP GET 请求一个文件，同时发送 If-Range（该头的内容就是第一次请求时服务器返回的 Etag：627-4d648041f6b80）。
+        服务器判断接收到的 Etag 和计算出来的 Etag 是否匹配，如果匹配，那么响应的状态码为 206；否则，状态码为 200。
+        
+## 加快网络速度-TCP优化
+- TCP延迟的原因
+    - 延迟确认
+        - 服务器在接收该数据时，会对ACK进行延时, 如果在一定时间内(通常为200ms), 有另外的数据来源时, 则会将2次ACK包一起发送，减少宽带。
+        - 因为TCP的报文到达确认（ACK），是对接收到的数据的最高序列号的确认。例如，接收方收到了201，301，401的数据报，则只 需要对401的数据包进行确认即可，对401的数据包的确认也意味着401之前的所有数据包都已经确认。
+    - nagle算法
+        - TCP头部大小至少是 20byte.
+        - 得让小数据包在缓存里面待一段时间，等数据多了再一起发送。
+    - slow-start
+        - 逐步增加数据包的发送量，直到发送端和接收端能
+        - 详见 TCP 拥塞控制 -  慢开始
+    - 端口耗尽和TIME_WAIT
+
+- 多线程为什么能加快
+    - 指数级降速，线性增速。
+    - 
 
 
 ## DNS
@@ -881,60 +941,4 @@ class SessionMiddleware(MiddlewareMixin):
         return response
 ```
 
-## HTTP 断点续传
-- 将任务（一个文件或压缩包）人为的划分为几个部分，每一个部分采用一个线程进行上传/下载，如果碰到网络故障，可以从已经上传/下载的部分开始继续上传/下载未完成的部分，而没有必要从头开始上传/下载。
-## 实现方法： http 1.1 
-- http头部的 Range & Content-Range字段。客户端发请求时对应的是 Range ，服务器端响应时对应的是 Content-Range。
 
-- Range:
-    - 用于请求头中，指定第一个字节的位置和最后一个字节的位置
-    - ```Range:(unit=first byte pos)-[last byte pos]```
-- Content-Range:
-    - 用于响应头中，在发出带 Range 的请求后，服务器会在 Content-Range 头部返回当前接受的范围和文件总大小。
-    - ```Content-Range: bytes (unit first byte pos) - [last byte pos]/[entity legth]```
-
-- 状态码：
-    - HTTP/1.1 200 Ok（不使用断点续传方式）
-    - HTTP/1.1 206 Partial Content（使用断点续传方式）
-- 校验： If-Modified-Since，和 Last-Modified 
-    - Last-Modified 是由服务器往客户端发送的 HTTP header 
-    - If-Modified-Since 则是由客户端往服务器发送的 http header
-    - 如果不是最新的，则返回新的内容，如果是最新的，则返回 304 告诉客户端其本地 cache 的页面是最新的，于是客户端就可以直接从本地加载页面了
-- Etag - Etag（Entity Tags) last modified 的补充
-    - 一些文件也许会周期性的更改，但是内容并不改变。
-    - 某些文件修改非常频繁，例如：在秒以下的时间内进行修改
-    - 某些服务器不能精确的得到文件的最后修改时间
-    - etag可以是一个版本标记 
-- If-Range
-    - 判断实体是否发生改变，如果实体未改变，服务器发送客户端丢失的部分，否则发送整个实体。与 range配套使用。
-    - If-Range 可以使用 Etag 或者 Last-Modified 返回的值
-    ```If-Range: Etag | HTTP-Date```
-    
-    ```
-    If-Range: “627-4d648041f6b80”
-    If-Range: Fri, 22 Feb 2013 03:45:02 GMT
-    ```
-    - 工作原理
-        - Etag 由服务器端生成，客户端通过 If-Range 条件判断请求来验证资源是否修改。请求一个文件的流程如下：
-
-        - 第一次请求：
-
-        - 客户端发起 HTTP GET 请求一个文件。
-        服务器处理请求，返回文件内容以及相应的 Header，其中包括 Etag（例如：627-4d648041f6b80）（假设服务器支持 Etag 生成并已开启了 Etag）状态码为 200。
-        第二次请求（断点续传）：
-
-        - 客户端发起 HTTP GET 请求一个文件，同时发送 If-Range（该头的内容就是第一次请求时服务器返回的 Etag：627-4d648041f6b80）。
-        服务器判断接收到的 Etag 和计算出来的 Etag 是否匹配，如果匹配，那么响应的状态码为 206；否则，状态码为 200。
-        
-## 加快网络速度-TCP优化
-- TCP延迟的原因
-    - 延迟确认
-        - 服务器在接收该数据时，会对ACK进行延时, 如果在一定时间内(通常为200ms), 有另外的数据来源时, 则会将2次ACK包一起发送，减少宽带。
-        - 因为TCP的报文到达确认（ACK），是对接收到的数据的最高序列号的确认。例如，接收方收到了201，301，401的数据报，则只 需要对401的数据包进行确认即可，对401的数据包的确认也意味着401之前的所有数据包都已经确认。
-    - nagle算法
-        - TCP头部大小至少是 20byte.
-        - 得让小数据包在缓存里面待一段时间，等数据多了再一起发送。
-    - slow-start
-        - 逐步增加数据包的发送量，直到发送端和接收端能
-        - 详见 TCP 拥塞控制 -  慢开始
-    - 端口耗尽和TIME_WAIT
