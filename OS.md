@@ -112,7 +112,9 @@ while (抢锁(lock) == 没抢到) {
     - 阻塞状态 -> 就绪状态：当进程等待的事件到来时，如I/O操作结束或中断结束时，中断处理程序必须把相应进程的状态由阻塞状态转换为就绪状态。
 
 
-<img src="./images/os/process_life_cycle.img" width="75%">
+    <p align="center">
+    <img src="./images/os/process_life_cycle.img" width="75%">
+    </p>
 
 4. 进程与线程的区别
     - 进程：

@@ -108,7 +108,7 @@
     - `幻读`:一个事务读取2次，得到的记录条数不一致：
 
         <p align="center">
-        <img src="./images/phantom_read.jpg" width="75%">
+            <img src="./images/phantom_read.jpg" width="75%">
         </p>
 
         - 由于在会话 1 之间插入了一个新的值，所以得到的两次数据就不一样了。
